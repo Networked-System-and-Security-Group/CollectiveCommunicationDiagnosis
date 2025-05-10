@@ -1,0 +1,165 @@
+time 299437108
+
+polling
+
+epoch now
+
+port telemetry data for port 3
+enqQdepth pfcPausedPacketNum packetNum
+0 0 653
+
+flow telemetry data for port 3
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+2427 0b001201 0b000e01 10000 10000 252 1300 31964 75 0 0
+2669 0b001201 0b000e01 10000 10000 17 49412 13080 578 0 0
+
+epoch last
+
+port telemetry data for port 3
+enqQdepth pfcPausedPacketNum packetNum
+0 0 1440
+
+flow telemetry data for port 3
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+2669 0b001201 0b000e01 10000 10000 17 12420 48112 1440 0 0
+
+end
+
+time 299571778
+
+polling
+
+epoch now
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+241 0 923
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+988 0b000e01 0b001201 10000 10000 17 0 30892 176 0 0
+1807 0b000e01 0b001201 10000 10000 252 64784 51544 747 241 0
+
+epoch last
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+0 0 1441
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1807 0b000e01 0b001201 10000 10000 252 26492 63484 1441 0 0
+
+end
+
+time 394166536
+
+polling
+
+epoch now
+
+port telemetry data for port 3
+enqQdepth pfcPausedPacketNum packetNum
+0 0 377
+
+flow telemetry data for port 3
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+2427 0b001201 0b000e01 10000 10000 252 12356 51048 182 0 0
+2669 0b001201 0b000e01 10000 10000 17 36724 26780 195 0 0
+
+epoch last
+
+port telemetry data for port 3
+enqQdepth pfcPausedPacketNum packetNum
+0 0 2418
+
+flow telemetry data for port 3
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+2427 0b001201 0b000e01 10000 10000 252 28584 11056 1147 0 0
+2669 0b001201 0b000e01 10000 10000 17 22824 35424 1271 0 0
+
+end
+
+time 453372988
+
+polling
+
+epoch now
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+7657 65 507
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+591 0b001201 0b001001 10000 10000 17 0 18428 116 1951 38
+1653 0b001301 0b001101 10000 10000 17 21924 4636 391 2074 27
+
+epoch last
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+0 0 1213
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1653 0b001301 0b001101 10000 10000 17 17888 20624 1213 0 0
+
+end
+
+time 453375808
+
+polling
+
+epoch now
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+7696 65 508
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+591 0b001201 0b001001 10000 10000 17 0 18428 116 1951 38
+1653 0b001301 0b001101 10000 10000 17 21924 5936 392 2113 27
+
+epoch last
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+0 0 1213
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1653 0b001301 0b001101 10000 10000 17 17888 20624 1213 0 0
+
+end
+
+time 587952941
+
+polling
+
+epoch now
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+41196 0 3477
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1461 0b001001 0b001201 10000 10000 17 18696 43292 1986 13689 0
+1683 0b001001 0b001201 10000 10000 252 21036 8400 1302 9864 0
+3447 0b001301 0b001201 10000 10000 17 0 47792 189 17643 0
+
+epoch last
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+0 0 3722
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1461 0b001001 0b001201 10000 10000 17 36316 17396 2255 0 0
+1683 0b001001 0b001201 10000 10000 252 14480 19736 1467 0 0
+
+end
+

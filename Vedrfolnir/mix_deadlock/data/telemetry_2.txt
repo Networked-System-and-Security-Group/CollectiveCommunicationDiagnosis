@@ -1,0 +1,84 @@
+time 2002093085
+
+signal
+
+epoch now
+
+traffic meter form port 2 to port 1
+portToPortBytes
+5421312
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+23005 250 495
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1047 0b000b01 0b000801 10000 100 17 976 65296 281 0 159
+2768 0b000601 0b000501 10000 100 17 31776 2296 214 0 91
+
+epoch last
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+0 0 8658
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1047 0b000b01 0b000801 10000 100 17 35224 65112 4329 0 0
+2768 0b000601 0b000501 10000 100 17 488 30376 4329 0 0
+
+epoch now
+
+traffic meter form port 2 to port 4
+portToPortBytes
+5205560
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+132 0 132
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1430 0b000901 0b000a01 10000 100 17 34312 21104 132 132 0
+
+epoch last
+
+port telemetry data for port 4
+enqQdepth pfcPausedPacketNum packetNum
+0 0 4329
+
+flow telemetry data for port 4
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1430 0b000901 0b000a01 10000 100 17 3024 32912 4329 0 0
+
+end
+
+time 2002093088
+
+polling
+
+epoch now
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+23005 250 495
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1047 0b000b01 0b000801 10000 100 17 976 65296 281 0 159
+2768 0b000601 0b000501 10000 100 17 31776 2296 214 0 91
+
+epoch last
+
+port telemetry data for port 1
+enqQdepth pfcPausedPacketNum packetNum
+0 0 8658
+
+flow telemetry data for port 1
+flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum
+1047 0b000b01 0b000801 10000 100 17 35224 65112 4329 0 0
+2768 0b000601 0b000501 10000 100 17 488 30376 4329 0 0
+
+end
+
