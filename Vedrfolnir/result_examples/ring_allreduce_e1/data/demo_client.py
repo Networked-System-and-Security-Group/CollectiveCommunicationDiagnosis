@@ -86,7 +86,7 @@ def build_graph(records):
             wait[record.sid] = None
         prev_nodes[record.sid] = node
 
-#    remove_zero_in_degree_nodes(G)
+    remove_zero_in_degree_nodes(G)
     
     return G
 

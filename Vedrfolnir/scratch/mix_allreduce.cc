@@ -298,7 +298,7 @@ void CalculateRoute(Ptr<Node> host)
 			// if 'now' is on the shortest path from 'next' to 'host'.
 			if (d + 1 == dis[next])
 			{
-				nextHop[next][host].push_back(now); // next 到 host 的几跳
+				nextHop[next][host].push_back(now);
 			}
 		}
 	}
@@ -338,7 +338,7 @@ void SetRoutingEntries()
 			for (int k = 0; k < (int)nexts.size(); k++)
 			{
 				Ptr<Node> next = nexts[k];
-				uint32_t interface = nbr2if[node][next].idx; // if=interface  node的接口
+				uint32_t interface = nbr2if[node][next].idx;
 				if (node->GetNodeType() == 1)
 					DynamicCast<SwitchNode>(node)->AddTableEntry(dstAddr, interface);
 				else
@@ -830,7 +830,7 @@ int main(int argc, char *argv[])
 	Config::SetDefault("ns3::QbbNetDevice::DynamicThreshold", BooleanValue(dynamicth));
 
 	// set int_multi
-	IntHop::multi = int_multi; // IntHop: 将时间、字节数、队列长度和线路速率压缩到 64 位中   multi：全局缩放因子，动态调整存储长度
+	IntHop::multi = int_multi;
 	// IntHeader::mode
 	if (cc_mode == 7) // timely, use ts
 		IntHeader::mode = IntHeader::TS;
@@ -839,7 +839,7 @@ int main(int argc, char *argv[])
 	else if (cc_mode == 10) // hpcc-pint
 		IntHeader::mode = IntHeader::PINT;
 	else								   // others, no extra header
-		IntHeader::mode = IntHeader::NONE; // IntHeader 包含IntHop信息
+		IntHeader::mode = IntHeader::NONE;
 
 	// Set Pint
 	if (cc_mode == 10)
@@ -865,12 +865,12 @@ int main(int argc, char *argv[])
 	{
 		uint32_t sid;
 		topof >> sid;
-		node_type[sid] = 1; // node_type 1 代表是交换机
+		node_type[sid] = 1; 
 	}
 	for (uint32_t i = 0; i < node_num; i++)
 	{
-		if (node_type[i] == 0)			 // node_type 0 代表是服务器
-			n.Add(CreateObject<Node>()); // n NodeContainer;
+		if (node_type[i] == 0)			
+			n.Add(CreateObject<Node>());
 		else
 		{
 			Ptr<SwitchNode> sw = CreateObject<SwitchNode>();
@@ -902,16 +902,16 @@ int main(int argc, char *argv[])
 	// Explicitly create the channels required by the topology.
 	//
 
-	Ptr<RateErrorModel> rem = CreateObject<RateErrorModel>();			   // 标记Packet是否发生错误
-	Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>(); // 产生随机数，可设置Min Max
+	Ptr<RateErrorModel> rem = CreateObject<RateErrorModel>();
+	Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
 	rem->SetRandomVariable(uv);
 	uv->SetStream(50);
-	rem->SetAttribute("ErrorRate", DoubleValue(error_rate_per_link)); // 0 
+	rem->SetAttribute("ErrorRate", DoubleValue(error_rate_per_link)); 
 	rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
 
 	FILE *pfc_file = fopen(pfc_output_file.c_str(), "w");
 
-	QbbHelper qbb; // 自定义网络设备模块
+	QbbHelper qbb;
 	Ipv4AddressHelper ipv4;
 	for (uint32_t i = 0; i < link_num; i++)
 	{
@@ -920,10 +920,10 @@ int main(int argc, char *argv[])
 		double error_rate;
 		topof >> src >> dst >> data_rate >> link_delay >> error_rate;
 
-		Ptr<Node> snode = n.Get(src), dnode = n.Get(dst); // 源节点  目标节点
+		Ptr<Node> snode = n.Get(src), dnode = n.Get(dst);
 
-		qbb.SetDeviceAttribute("DataRate", StringValue(data_rate)); // 设置数据传输速率
-		qbb.SetChannelAttribute("Delay", StringValue(link_delay));	// 设置延迟
+		qbb.SetDeviceAttribute("DataRate", StringValue(data_rate));
+		qbb.SetChannelAttribute("Delay", StringValue(link_delay));
 
 		if (error_rate > 0)
 		{
@@ -937,7 +937,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			qbb.SetDeviceAttribute("ReceiveErrorModel", PointerValue(rem)); // 设置error model
+			qbb.SetDeviceAttribute("ReceiveErrorModel", PointerValue(rem));
 		}
 
 		fflush(stdout);
@@ -963,8 +963,8 @@ int main(int argc, char *argv[])
 		// used to create a graph of the topology
 		nbr2if[snode][dnode].idx = DynamicCast<QbbNetDevice>(d.Get(0))->GetIfIndex();
 		nbr2if[snode][dnode].up = true;
-		nbr2if[snode][dnode].delay = DynamicCast<QbbChannel>(DynamicCast<QbbNetDevice>(d.Get(0))->GetChannel())->GetDelay().GetTimeStep(); // 单位 ns
-		nbr2if[snode][dnode].bw = DynamicCast<QbbNetDevice>(d.Get(0))->GetDataRate().GetBitRate();										   // 速率 单位 bit/s
+		nbr2if[snode][dnode].delay = DynamicCast<QbbChannel>(DynamicCast<QbbNetDevice>(d.Get(0))->GetChannel())->GetDelay().GetTimeStep();
+		nbr2if[snode][dnode].bw = DynamicCast<QbbNetDevice>(d.Get(0))->GetDataRate().GetBitRate();										   
 		nbr2if[dnode][snode].idx = DynamicCast<QbbNetDevice>(d.Get(1))->GetIfIndex();
 		nbr2if[dnode][snode].up = true;
 		nbr2if[dnode][snode].delay = DynamicCast<QbbChannel>(DynamicCast<QbbNetDevice>(d.Get(1))->GetChannel())->GetDelay().GetTimeStep();
@@ -981,7 +981,7 @@ int main(int argc, char *argv[])
 		DynamicCast<QbbNetDevice>(d.Get(1))->TraceConnectWithoutContext("QbbPfc", MakeBoundCallback(&get_pfc, pfc_file, DynamicCast<QbbNetDevice>(d.Get(1))));
 	}
 
-	nic_rate = get_nic_rate(n); // 网卡，每秒多少bit
+	nic_rate = get_nic_rate(n);
 
 	// config switch
 	for (uint32_t i = 0; i < node_num; i++)
@@ -990,7 +990,7 @@ int main(int argc, char *argv[])
 		{ // is switch
 			Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(n.Get(i));
 			uint32_t shift = 3;								 // by default 1/8
-			for (uint32_t j = 1; j < sw->GetNDevices(); j++) // 交换机 多个网卡 j-port
+			for (uint32_t j = 1; j < sw->GetNDevices(); j++)
 			{
 				Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(sw->GetDevice(j));
 				// set ecn
@@ -1002,9 +1002,9 @@ int main(int argc, char *argv[])
 				// set pfc
 				uint64_t delay = DynamicCast<QbbChannel>(dev->GetChannel())->GetDelay().GetTimeStep();
 				uint32_t headroom = rate * delay / 8 / 1000000000 * 3;
-				sw->m_mmu->ConfigHdrm(j, headroom); // 预留缓冲区空间
+				sw->m_mmu->ConfigHdrm(j, headroom);
 
-				// set pfc alpha, proportional to link bw //动态PFC Alpha参数调整
+				// set pfc alpha, proportional to link bw
 				sw->m_mmu->pfc_a_shift[j] = shift;
 				while (rate > nic_rate && sw->m_mmu->pfc_a_shift[j] > 0)
 				{
@@ -1019,13 +1019,13 @@ int main(int argc, char *argv[])
 			// RDMA NPA detect  TODO
 			std::string telemetry_path = "/telemetry_" + std::to_string(i) + ".txt";
 			telemetry_path = dir + telemetry_path;
-			sw->fp_telemetry = fopen(telemetry_path.c_str(), "w"); // 每个交换机生成独立的遥测日志文件
-			if (ack_high_prio)									   // 决定ACK报文是否优先处理
+			sw->fp_telemetry = fopen(telemetry_path.c_str(), "w");
+			if (ack_high_prio)									  
 				sw->SetAttribute("AckHighPrio", UintegerValue(1));
 			else
 				sw->SetAttribute("AckHighPrio", UintegerValue(0));
 			if (epoch_time > 0)
-				sw->epochTime = epoch_time; // 设置周期性任务的时间间隔
+				sw->epochTime = epoch_time;
 		}
 	}
 
@@ -1065,7 +1065,7 @@ int main(int argc, char *argv[])
 			rdmaHw->SetPintSmplThresh(pint_prob);
 
 			// RDMA NPA
-			rdmaHw->m_agent_threshold = agent_threshold; // RTT 阈值
+			rdmaHw->m_agent_threshold = agent_threshold;
 			if (agent_nodes.find(i) != agent_nodes.end())
 				rdmaHw->m_agent_flag = true;
 			else
@@ -1222,7 +1222,7 @@ int main(int argc, char *argv[])
 		app_i->Allreduce();  //TODO
 		app_i->SetIP2APPCb(MakeCallback(&ip_to_app));
     }
-	apps.Start(Time(0));
+	apps.Start(Seconds(2));
 
 	topof.close();
 	tracef.close();

@@ -16,6 +16,12 @@ tags
 .vscode/
 *.zip
 
+telemetry_*.txt
+window_*.png
+demo_client.png
+fct.txt
+pfc.txt
+qlen.txt
 
 analysis/trace_reader
 .lock-waf_linux2_build
