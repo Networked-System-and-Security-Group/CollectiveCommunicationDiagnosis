@@ -57,6 +57,14 @@ config = {
     "f_node_font": {'font_size': 8 }
 }
 
+def delete_files(directory):
+    file_list = os.listdir(directory)
+    for file in file_list:
+        file_path = os.path.join(directory, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+delete_files(OUTPUT_DIR)
 
 for window_start, G in window_graphs.items():
     plt.figure(figsize=(20, 12))

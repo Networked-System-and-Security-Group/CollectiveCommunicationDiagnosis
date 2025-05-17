@@ -19,6 +19,7 @@
  */
 #include "rdma-cc-helper.h"
 #include "ns3/rdma-cc.h"
+#include "ns3/rdma-driver.h"
 #include "ns3/uinteger.h"
 #include "ns3/string.h"
 
@@ -51,7 +52,8 @@ Ptr<Application>
 RdmaCCHelper::Install (Ptr<Node> c)
 {
   Ptr<RdmaCC> client = m_factory.Create<RdmaCC> ();
-  c->AddApplication (client);
+  uint32_t app_index = c->AddApplication (client);
+  c->GetObject<RdmaDriver>()->m_rdma->m_agent_app = app_index;  // CC NPA
   
   return client;
 }

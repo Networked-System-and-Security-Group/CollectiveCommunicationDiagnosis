@@ -5,7 +5,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
-#include <ns3/rdma.h>
+#include "ns3/rdma.h"
 #include <vector>
 
 namespace ns3 {
@@ -100,6 +100,11 @@ private:
   uint32_t m_win; // bound of on-the-fly packets
   uint64_t m_baseRtt; // base Rtt
   uint16_t m_pg; // priority group
+
+  // CC NPA 
+  void SendNotification();
+  void SetAgent();
+  
 };
 
 } // namespace ns3

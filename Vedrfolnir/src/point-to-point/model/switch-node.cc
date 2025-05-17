@@ -109,6 +109,8 @@ int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch){
 		buf.u32[2] = ch.ack.sport | ((uint32_t)ch.ack.dport << 16);
 	else if (ch.l3Prot == 0xFA)
 		buf.u32[2] = ch.polling.sport | ((uint32_t)ch.polling.dport << 16);
+	else if (ch.l3Prot == 0xF9)
+		buf.u32[2] = ch.notif.sport | ((uint32_t)ch.notif.dport << 16);
 
 	uint32_t idx = EcmpHash(buf.u8, 12, m_ecmpSeed) % nexthops.size();
 	return nexthops[idx];
@@ -242,7 +244,7 @@ void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch){
 
 		// determine the qIndex
 		uint32_t qIndex;
-		if (ch.l3Prot == 0xFA || ch.l3Prot == 0xFF || ch.l3Prot == 0xFE || (m_ackHighPrio && (ch.l3Prot == 0xFD || ch.l3Prot == 0xFC))){  //QCN or PFC or NACK, go highest priority
+		if (ch.l3Prot == 0xFA || ch.l3Prot == 0xF9 || ch.l3Prot == 0xFF || ch.l3Prot == 0xFE || (m_ackHighPrio && (ch.l3Prot == 0xFD || ch.l3Prot == 0xFC))){  //QCN or PFC or NACK, go highest priority
 			qIndex = 0;
 		}else{
 			qIndex = (ch.l3Prot == 0x06 ? 1 : ch.udp.pg); // if TCP, put to queue 1

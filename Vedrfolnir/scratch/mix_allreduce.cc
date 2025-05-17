@@ -191,7 +191,7 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q)
 
 	Ptr<RdmaCC> cc = ip_to_app(q->sip);
 	// sid, did, send step, receive step, prev rank, sport, dport, size (B), start_time, fct (ns), standalone_fct (ns)
-	if(q->sport == 10000)
+	if(q->sport == 10000 && q->m_pg == 3)
 		fprintf(fout, "%u %u %u %u %u %u %u %lu %lu %lu %lu\n", sid, did, cc->GetSendStep(), cc->GetRecvStep(), rank2nodeID[cc->GetPrevRank()], q->sport, q->dport, q->m_size, q->startTime.GetTimeStep(), (Simulator::Now() - q->startTime).GetTimeStep(), standalone_fct);
 	else
 		fprintf(fout, "### %u %u %u %u %lu %lu %lu %lu\n", sid, did, q->sport, q->dport, q->m_size, q->startTime.GetTimeStep(), (Simulator::Now() - q->startTime).GetTimeStep(), standalone_fct);
@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 {
 	LogComponentEnable("GENERIC_SIMULATION", LOG_LEVEL_INFO);
 	// LogComponentEnable("RdmaCC", LOG_LEVEL_FUNCTION);
-	LogComponentEnable("RdmaClient", LOG_LEVEL_FUNCTION);
+	// LogComponentEnable("RdmaClient", LOG_LEVEL_FUNCTION);
 
 	clock_t begint, endt;
 	begint = clock();
@@ -1185,7 +1185,7 @@ int main(int argc, char *argv[])
 			for (uint32_t j = 0; j < node_num; j++)
 			{
 				if (n.Get(j)->GetNodeType() == 0)
-					portNumder[i][j] = 10001; // each host pair use port number from 10000
+					portNumder[i][j] = 10001; // each host pair use port number from 10001
 			}
 	}	
 

@@ -13,7 +13,10 @@
 #include "ns3/ipv4-end-point.h"
 #include "rdma-cc.h"
 #include "ns3/seq-ts-header.h"
-#include <ns3/rdma-driver.h>
+#include "ns3/rdma-driver.h"
+#include "ns3/rdma-hw.h"
+#include "ns3/rdma-queue-pair.h"
+#include "ns3/ppp-header.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -157,8 +160,7 @@ void RdmaCC::SetIP2APPCb(Callback<Ptr<RdmaCC>, Ipv4Address> cb){
 
 void RdmaCC::Send(uint16_t distRank){
     
-    // NS_LOG_FUNCTION_NOARGS ();
-    NS_LOG_FUNCTION("Rank: " << m_rank << "  SendStep: m_sendStep = " << m_sendStep << ", m_recvStep = " << m_recvStep);
+    // NS_LOG_FUNCTION("Rank: " << m_rank << "  SendStep: m_sendStep = " << m_sendStep << ", m_recvStep = " << m_recvStep);
     // get RDMA drive
     Ptr<RdmaDriver> rdma = GetNode()->GetObject<RdmaDriver>();
     if(m_alg == 2)
@@ -223,7 +225,7 @@ void RdmaCC::AlltoAll(){
 }
 
 void RdmaCC::SendStep(){
-    NS_LOG_FUNCTION_NOARGS ();
+    // NS_LOG_FUNCTION_NOARGS ();
 
     while(m_recvStep <= m_nextRank.size() && m_prevRank[m_recvStep - 1] == -1){
         m_recvStep++;
@@ -232,6 +234,8 @@ void RdmaCC::SendStep(){
     while(m_sendStep < m_recvStep && m_nextRank[m_sendStep] == -1){
         m_sendStep++;
     }
+
+    SendNotification(); // CC NPA
 
     if(m_stepStu == 1 && m_recvStep > m_sendStep){
         m_stepStu = 0;
@@ -242,6 +246,7 @@ void RdmaCC::SendStep(){
             return;
         }
 
+        SetAgent(); // CC NPA
         Send(m_nextRank[m_sendStep - 1]);
     }
 }
@@ -413,6 +418,88 @@ void RdmaCC::StopApplication ()
   NS_LOG_FUNCTION_NOARGS ();
   //TODO: reset the application
   
+}
+
+// CC NPA
+void RdmaCC::SendNotification(){
+    NS_LOG_FUNCTION_NOARGS ();
+    
+    NS_ASSERT(m_sendStep <= m_recvStep);
+
+    if(m_sendStep < m_recvStep){ // not waiting
+        return;
+    }
+
+    NS_ASSERT(m_prevRank[m_sendStep - 1] != -1);
+
+    NS_LOG_FUNCTION("Rank: " << m_rank << "  SendNotification: m_sendStep = " << m_sendStep);
+
+    Ptr<Packet> p = Create<Packet>(0);
+    
+    CustomHeader notifHdr(CustomHeader::L4_Header);
+    notifHdr.l3Prot = 0xF9;
+    notifHdr.notif.sport = m_port;
+    notifHdr.notif.dport = m_comm[m_prevRank[m_sendStep - 1]].port;
+    notifHdr.notif.step = m_sendStep;
+    p->AddHeader(notifHdr);
+    
+    Ipv4Header head;
+    head.SetSource(m_ip);
+    head.SetDestination(m_comm[m_prevRank[m_sendStep - 1]].ip);
+    head.SetProtocol(0xF9);
+    head.SetTtl(64);
+    head.SetPayloadSize(p->GetSize());
+    p->AddHeader(head);
+
+    PppHeader ppp;
+    ppp.SetProtocol(0x0021);
+    p->AddHeader(ppp);
+
+    Ptr<RdmaHw> rdmaHw = GetNode()->GetObject<RdmaDriver>()->m_rdma;
+    Ptr<RdmaRxQueuePair> rxqp = rdmaHw->GetRxQp(m_ip.Get(), m_comm[m_prevRank[m_sendStep - 1]].ip.Get(), m_port, m_comm[m_prevRank[m_sendStep - 1]].port, m_pg, false);
+
+    if(rxqp == NULL){  // waiting prev rank over steps
+        NS_LOG_WARN("Rank: " << m_rank << "  SendNotification: rxqp is NULL");
+        // TODO test
+        auto &v = rdmaHw->m_rtTable[m_comm[m_prevRank[m_sendStep - 1]].ip.Get()];
+        union{
+            struct {
+                    uint32_t sip, dip;
+                    uint16_t sport, dport;
+                };
+                char c[12];
+        } buf;
+        buf.sip = m_ip.Get();
+        buf.dip = m_comm[m_prevRank[m_sendStep - 1]].ip.Get();
+        buf.sport = m_port;
+        buf.dport = m_comm[m_prevRank[m_sendStep - 1]].port;
+        uint32_t nic_idx = v[Hash32(buf.c, 12) % v.size()];
+
+        Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
+
+        dev->RdmaEnqueueHighPrioQ(p);
+        dev->TriggerTransmit();
+        return;
+    }
+
+    uint32_t nic_idx = rdmaHw->GetNicIdxOfRxQp(rxqp);
+    Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
+
+    dev->RdmaEnqueueHighPrioQ(p);
+    dev->TriggerTransmit();
+}
+
+// CC NPA
+void RdmaCC::SetAgent(){
+    NS_LOG_FUNCTION_NOARGS ();
+
+    Ptr<RdmaHw> rdmaHw = GetNode()->GetObject<RdmaDriver>()->m_rdma;
+    rdmaHw->m_agent_step = 0;
+
+    if(rdmaHw->m_detectSteps.count(m_sendStep)){
+        rdmaHw->m_agent_step = m_sendStep;
+        rdmaHw->m_detectSteps.erase(m_sendStep);
+    }
 }
 
 } // Namespace ns3

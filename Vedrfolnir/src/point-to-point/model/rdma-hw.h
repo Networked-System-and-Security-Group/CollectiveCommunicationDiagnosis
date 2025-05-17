@@ -66,6 +66,7 @@ public:
 	int ReceiveUdp(Ptr<Packet> p, CustomHeader &ch);
 	int ReceiveCnp(Ptr<Packet> p, CustomHeader &ch);
 	int ReceiveAck(Ptr<Packet> p, CustomHeader &ch); // handle both ACK and NACK
+	int ReceiveNotif(Ptr<Packet> p, CustomHeader &ch); // handle notification
 	int Receive(Ptr<Packet> p, CustomHeader &ch); // callback function that the QbbNetDevice should use when receive packets. Only NIC can call this function. And do not call this upon PFC
 
 	void CheckandSendQCN(Ptr<RdmaRxQueuePair> q);
@@ -156,9 +157,12 @@ public:
 	void HandleAckHpPint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateHpPint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 
-	//RDMA NPA
+	// CC NPA
 	bool m_agent_flag;
 	int m_agent_threshold;
+	uint32_t m_agent_step;
+	std::set<int> m_detectSteps;
+	uint32_t m_agent_app;
 };
 
 } /* namespace ns3 */

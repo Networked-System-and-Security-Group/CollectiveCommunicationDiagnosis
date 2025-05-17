@@ -132,7 +132,7 @@ public:
 		  uint8_t qIndex;
 	  } pfc;
 
-    //RDMA NPA Header
+    //CC NPA Header
     struct {
       uint32_t seq;
       uint32_t eventID;
@@ -143,6 +143,11 @@ public:
       uint32_t eventID;
       uint16_t sport, dport;
     } polling; //l3Port = 0xFA, for flow path trace
+
+    struct {
+      uint16_t sport, dport;
+      uint32_t step;
+    } notif; //l3Port = 0xF9, for host interaction
     
   };
 

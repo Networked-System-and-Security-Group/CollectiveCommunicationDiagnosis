@@ -9,6 +9,7 @@
 #include "ns3/double.h"
 #include "ns3/data-rate.h"
 #include "ns3/pointer.h"
+#include "ns3/rdma-cc.h"
 #include "rdma-hw.h"
 #include "ppp-header.h"
 #include "qbb-header.h"
@@ -447,6 +448,31 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	return 0;
 }
 
+// CC NPA
+int RdmaHw::ReceiveNotif(Ptr<Packet> p, CustomHeader &ch){
+	uint32_t step = ch.notif.step;
+
+	auto app = DynamicCast<RdmaCC>(m_node->GetApplication(m_agent_app));
+	if(app->GetRecvStep() == step)  // waiting the other
+		return 0;
+
+	if(app->GetSendStep() > step){
+		return 0;
+	}
+
+	if(app->GetSendStep() == step){
+		m_agent_step = step;
+		return 0;
+	}
+
+	if(app->GetRecvStep() < step){
+		m_detectSteps.insert(step);
+		return 0;
+	}
+
+	NS_ASSERT_MSG(false, "CC NPA - ReceiveNotif ERROR");
+}
+
 int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 	if (ch.l3Prot == 0x11){ // UDP
 		ReceiveUdp(p, ch);
@@ -456,6 +482,9 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 		ReceiveAck(p, ch);
 	}else if (ch.l3Prot == 0xFC){ // ACK
 		ReceiveAck(p, ch);
+	}
+	else if (ch.l3Prot == 0xF9){ // Notif
+		ReceiveNotif(p, ch);
 	}
 	return 0;
 }
@@ -556,11 +585,13 @@ void RdmaHw::RedistributeQp(){
 }
 
 
-// RDMA NPA
-void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev){
-	if(seq <= qp->snd_una){//表示之前的包已经收到ack了
+// CC NPA
+void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev, Ptr<RdmaHw> rdmaHw){
+	if(rdmaHw->m_agent_step == 0 || seq <= qp->snd_una){
 		return;
 	}
+
+	rdmaHw->m_agent_step = 0;
 
 	uint64_t interval = Simulator::Now().GetTimeStep() - qp->npa.m_lastPollingTime;
 	if(interval > 3000000){
@@ -591,7 +622,7 @@ void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev
 }
 
 Ptr<Packet> RdmaHw::GetNxtPacket(Ptr<RdmaQueuePair> qp){
-	//从qp中生成下一个要发的包
+	
 	uint32_t payload_size = qp->GetBytesLeft();
 	if (m_mtu < payload_size)
 		payload_size = m_mtu;
@@ -627,7 +658,7 @@ Ptr<Packet> RdmaHw::GetNxtPacket(Ptr<RdmaQueuePair> qp){
 
 	// RDMA NPA
 	if(m_agent_flag){
-		Simulator::Schedule(MicroSeconds(m_agent_threshold), &ScheduleAckClock, qp->snd_nxt, qp, m_nic[GetNicIdxOfQp(qp)].dev);
+		Simulator::Schedule(MicroSeconds(m_agent_threshold), &ScheduleAckClock, qp->snd_nxt, qp, m_nic[GetNicIdxOfQp(qp)].dev, this);
 	}
 
 	// return
