@@ -24,7 +24,7 @@ Please see `Vedrfolnir/mix_allreduce/config.txt` for example.
 ### Run
 
 ```
-./waf --run 'scratch/mix_allreduce.cc mix_allreduce/config.txt'
+./waf --run 'scratch/mix_allreduce mix_allreduce/config.txt'
 ```
 
 This will run a diagnostic example of ring allreduce. You can read `mix_allreduce.cc` in detail to understand the main logic of the simulation.
