@@ -211,14 +211,20 @@ void get_pfc(FILE *fout, Ptr<QbbNetDevice> dev, uint32_t type)
 
 struct QlenDistribution
 {
-	vector<uint32_t> cnt; // cnt[i] is the number of times that the queue len is i KB
+		vector<uint32_t> egress_cnt; // egress_cnt[i] is the number of times that the egress queue len is i KB
+	vector<uint32_t> ingress_cnt; // ingress_cnt[i] is the number of times that the ingress queue len is i KB
 
-	void add(uint32_t qlen)
+	void add(uint32_t egress_qlen, uint32_t ingress_qlen)
 	{
-		uint32_t kb = qlen / 1000;
-		if (cnt.size() < kb + 1)
-			cnt.resize(kb + 1);
-		cnt[kb]++;
+		uint32_t egress_kb = egress_qlen / 1000;
+		if (egress_cnt.size() < egress_kb + 1)
+			egress_cnt.resize(egress_kb + 1);
+		egress_cnt[egress_kb]++;
+
+		uint32_t ingress_kb = ingress_qlen / 1000;
+		if (ingress_cnt.size() < ingress_kb + 1)
+			ingress_cnt.resize(ingress_kb + 1);
+		ingress_cnt[ingress_kb]++;
 	}
 };
 map<uint32_t, map<uint32_t, QlenDistribution>> queue_result;
@@ -233,10 +239,14 @@ void monitor_buffer(FILE *qlen_output, NodeContainer *n)
 				queue_result[i];
 			for (uint32_t j = 1; j < sw->GetNDevices(); j++)
 			{
-				uint32_t size = 0;
+				uint32_t egress_size = 0;
+				uint32_t ingress_size = 0;
 				for (uint32_t k = 0; k < SwitchMmu::qCnt; k++)
-					size += sw->m_mmu->egress_bytes[j][k];
-				queue_result[i][j].add(size);
+				{
+					egress_size += sw->m_mmu->egress_bytes[j][k];
+					ingress_size += sw->m_mmu->ingress_bytes[j][k]; // Collect ingress bytes
+				}
+				queue_result[i][j].add(egress_size, ingress_size); 
 			}
 		}
 	}
@@ -247,9 +257,19 @@ void monitor_buffer(FILE *qlen_output, NodeContainer *n)
 			for (auto &it1 : it0.second)
 			{
 				fprintf(qlen_output, "%u %u", it0.first, it1.first);
-				auto &dist = it1.second.cnt;
-				for (uint32_t i = 0; i < dist.size(); i++)
-					fprintf(qlen_output, " %u", dist[i]);
+				
+				// Output egress queue distribution
+				auto &egress_dist = it1.second.egress_cnt;
+				fprintf(qlen_output, " egress:");
+				for (uint32_t i = 0; i < egress_dist.size(); i++)
+					fprintf(qlen_output, " %u", egress_dist[i]);
+
+				// Output ingress queue distribution
+				auto &ingress_dist = it1.second.ingress_cnt;
+				fprintf(qlen_output, " ingress:");
+				for (uint32_t i = 0; i < ingress_dist.size(); i++)
+					fprintf(qlen_output, " %u", ingress_dist[i]);
+				
 				fprintf(qlen_output, "\n");
 			}
 		fflush(qlen_output);
