@@ -142,7 +142,7 @@ for window_start, G in window_graphs.items():
     
     plt.legend(
         handles=[
-            plt.Line2D([0], [0], marker='o', color='w', label='P Node (E/I: mean/max)', 
+            plt.Line2D([0], [0], marker='o', color='w', label='P Node', 
                       markerfacecolor='royalblue', markersize=12),
             plt.Line2D([0], [0], marker='s', color='w', label='F Node',
                       markerfacecolor='limegreen', markersize=10)
