@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import json
 import os
 from collections import defaultdict
+import numpy as np
 
 WINDOW_SIZE = 10_000_000
 OUTPUT_DIR = "graph_telemetry"
@@ -11,6 +12,12 @@ with open('telemetry.json') as f:
     data = json.load(f)
 
 window_graphs = defaultdict(lambda: nx.DiGraph())
+
+def calculate_queue_stats(queue_data):
+    if not queue_data:
+        return 0, 0
+    queue_data = np.array(queue_data)
+    return np.mean(queue_data), np.max(queue_data)
 
 for sw_id, sw_data in data.items():
     for ts_str, ts_info in sw_data.items():
@@ -27,7 +34,22 @@ for sw_id, sw_data in data.items():
         for p_id, p_info in p_data.items():
             p_node = f"SW{sw_id}P{p_id}"
             
-            G.add_node(p_node, node_type="P", color="royalblue", size=800)
+            # Calculate queue statistics
+            egress_mean, egress_max = calculate_queue_stats(p_info.get("egress_queue", []))
+            ingress_mean, ingress_max = calculate_queue_stats(p_info.get("ingress_queue", []))
+            
+            # Node size based on total queue usage
+            total_queue_size = egress_max + ingress_max
+            node_size = 800 + min(total_queue_size / 1000, 400)  # Scale node size based on queue usage
+            
+            G.add_node(p_node, 
+                      node_type="P", 
+                      color="royalblue", 
+                      size=node_size,
+                      egress_mean=egress_mean,
+                      ingress_mean=ingress_mean,
+                      egress_max=egress_max,
+                      ingress_max=ingress_max)
             
             def process_edges(weight_dict, direction):
                 for f_link, weight in weight_dict.items():
@@ -72,14 +94,26 @@ for window_start, G in window_graphs.items():
     node_types = nx.get_node_attributes(G, 'node_type')
     pos = nx.spring_layout(G, k=0.8, iterations=50, seed=42)
     
-    nx.draw_networkx_nodes(
-        G, pos,
-        nodelist=[n for n, t in node_types.items() if t == "P"],
-        node_color='royalblue',
-        node_size=800,
-        edgecolors='navy',
-        linewidths=1.5
-    )
+    # Draw P nodes with queue information
+    p_nodes = [n for n, t in node_types.items() if t == "P"]
+    for node in p_nodes:
+        node_data = G.nodes[node]
+        plt.scatter(pos[node][0], pos[node][1],
+                   s=node_data['size'],
+                   c='royalblue',
+                   edgecolors='navy',
+                   linewidth=1.5,
+                   alpha=0.7)
+        
+        # Add queue information text
+        queue_info = f"E:{node_data['egress_mean']:.0f}/{node_data['egress_max']:.0f}\nI:{node_data['ingress_mean']:.0f}/{node_data['ingress_max']:.0f}"
+        plt.text(pos[node][0], pos[node][1],
+                queue_info,
+                horizontalalignment='center',
+                verticalalignment='center',
+                fontsize=8)
+    
+    # Draw F nodes
     nx.draw_networkx_nodes(
         G, pos,
         nodelist=[n for n, t in node_types.items() if t == "F"],
@@ -108,7 +142,7 @@ for window_start, G in window_graphs.items():
     
     plt.legend(
         handles=[
-            plt.Line2D([0], [0], marker='o', color='w', label='P Node', 
+            plt.Line2D([0], [0], marker='o', color='w', label='P Node (E/I: mean/max)', 
                       markerfacecolor='royalblue', markersize=12),
             plt.Line2D([0], [0], marker='s', color='w', label='F Node',
                       markerfacecolor='limegreen', markersize=10)
