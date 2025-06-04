@@ -96,7 +96,11 @@ def parse_telemetry(switch_dict, switch_list):
                 flows = []
                 pktnums = []
                 queuedepths = []
-                switch_dict[str(swicth_id)][time][epoch][port]["f2p_weight"] = {}
+                switch_dict[str(swicth_id)][time][epoch][port] = {
+                    "f2p_weight": {},
+                    "egress_queue": {},
+                    "ingress_queue": {}
+                }
                 port = line.split()[-1]
                 line_idx += 1
                 teleflag = True
@@ -105,8 +109,12 @@ def parse_telemetry(switch_dict, switch_list):
                 pktnum = int(lines[line_idx+2].split()[2])
                 qdepth = int(lines[line_idx+2].split()[0])
                 paused = int(lines[line_idx+2].split()[1])
-                switch_dict[str(swicth_id)][time][epoch][port] = {}
-                switch_dict[str(swicth_id)][time][epoch][port]["paused_pkt"] = paused
+                if port not in switch_dict[str(swicth_id)][time][epoch]:
+                    switch_dict[str(swicth_id)][time][epoch][port] = {
+                        "paused_pkt": paused,
+                        "egress_queue": {},
+                        "ingress_queue": {}
+                    }
                 if pktnum == 0:
                     porttelemetry[epoch][line[:-1].split()[-1]] = 0
                 else:
@@ -126,6 +134,14 @@ def parse_telemetry(switch_dict, switch_list):
                     queuedepths.append(0)
                 else:
                     queuedepths.append(int(int(line.split()[9]) / (int(line.split()[8])-int(line.split()[10]))))
+            elif line.startswith("egress:"):
+                # Parse egress queue distribution
+                queue_dist = [int(x) for x in line.split()[1:]]
+                switch_dict[str(swicth_id)][time][epoch][port]["egress_queue"] = queue_dist
+            elif line.startswith("ingress:"):
+                # Parse ingress queue distribution
+                queue_dist = [int(x) for x in line.split()[1:]]
+                switch_dict[str(swicth_id)][time][epoch][port]["ingress_queue"] = queue_dist
 
             line_idx += 1
 
