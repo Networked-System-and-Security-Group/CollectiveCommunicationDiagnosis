@@ -11,6 +11,7 @@
 #include "ppp-header.h"
 #include "ns3/int-header.h"
 #include <cmath>
+#include <vector>
 
 namespace ns3 {
 
@@ -62,7 +63,7 @@ SwitchNode::SwitchNode(){
 	for (uint32_t i = 0; i < pCnt; i++)
 		for (uint32_t j = 0; j < epochNum; j++)
 			for (uint32_t k = 0; k < flowEntryNum; k++)
-				m_flowTelemetryData[i][j][k].flowTuple = FiveTuple{0,0,0,0,0};
+				memset(&m_flowTelemetryData[i][j][k].flowTuple, 0, sizeof(FiveTuple));
 	for (uint32_t j = 0; j < epochNum; j++)
 		for (uint32_t k = 0; k < pCnt; k++){
 				m_portTelemetryData[j][k].enqQdepth = 0;
