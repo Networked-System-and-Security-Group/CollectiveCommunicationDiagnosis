@@ -9,6 +9,21 @@
 
 namespace ns3 {
 
+struct FiveTuple{
+	uint32_t srcIp;
+	uint32_t dstIp;
+	uint16_t srcPort;
+	uint16_t dstPort;
+	uint8_t protocol;
+	bool operator==(const FiveTuple &other) const{
+		return srcIp == other.srcIp
+			&& dstIp == other.dstIp 
+			&& srcPort == other.srcPort 
+			&& dstPort == other.dstPort 
+			&& protocol == other.protocol;
+	}
+};
+
 class Packet;
 
 class SwitchNode : public Node{
@@ -26,30 +41,33 @@ class SwitchNode : public Node{
 	uint64_t m_lastPktTs[pCnt]; // ns
 	double m_u[pCnt];
 
-	// RDMA NPA
-	static const uint32_t flowHashSeed = 0x233;	// Seed for flow hash
-	static const uint32_t flowEntryNum = (1 << 12);	// Number of flowTelemetryData entries
-	static const uint32_t epochNum = 2;	//
-	static const uint32_t portToPortSlot = 5;	// port to port bytes slot
-	uint64_t m_lastSignalEpoch;	// last signal time
-	uint32_t m_slotIdx;	// current epoch index
-	uint64_t m_lastPollingEpoch[pCnt];	// last polling epoch
-	uint32_t m_lastEventID[pCnt];	// last event ID
-	struct FiveTuple{
-		uint32_t srcIp;
-		uint32_t dstIp;
-		uint16_t srcPort;
-		uint16_t dstPort;
-		uint8_t protocol;
-		bool operator==(const FiveTuple &other) const{
-			return srcIp == other.srcIp
-				&& dstIp == other.dstIp 
-				&& srcPort == other.srcPort 
-				&& dstPort == other.dstPort 
-				&& protocol == other.protocol;
-		}
+	// Input traffic monitoring
+	struct InputFlowTelemetryData {
+		FiveTuple flowTuple;
+		uint32_t minSeq;
+		uint32_t maxSeq;
+		uint32_t packetNum;
+		uint32_t enqQdepth;
+		uint32_t pfcPausedPacketNum;
+		uint64_t lastTimeStep;
 	};
-	
+	struct InputTrafficStats {
+		uint64_t totalBytes;
+		uint64_t totalPackets;
+		uint64_t lastUpdateTime;
+		std::map<uint32_t, InputFlowTelemetryData> flowData; // flowId -> telemetry
+	};
+	InputTrafficStats m_inputStats[pCnt]; // per port input statistics
+
+	// RDMA NPA
+	static const uint32_t flowHashSeed = 0x233; // Seed for flow hash
+	static const uint32_t flowEntryNum = (1 << 12); // Number of flowTelemetryData entries
+	static const uint32_t epochNum = 2; //
+	static const uint32_t portToPortSlot = 5; // port to port bytes slot
+	uint64_t m_lastSignalEpoch; // last signal time
+	uint32_t m_slotIdx; // current epoch index
+	uint64_t m_lastPollingEpoch[pCnt]; // last polling epoch
+	uint32_t m_lastEventID[pCnt]; // last event ID
 	struct FlowTelemetryData{
 		uint32_t minSeq;           // 32-bit min_seq
 		uint32_t maxSeq;           // 32-bit max_seq
@@ -108,6 +126,9 @@ public:
 	// for RDMA NPA detect
 	FILE *fp_telemetry = NULL;
 	uint32_t epochTime = 1000000;
+
+	void CollectInputTraffic(uint32_t port, Ptr<Packet> p, CustomHeader &ch);
+	void OutputInputTrafficStats();
 };
 
 } /* namespace ns3 */
