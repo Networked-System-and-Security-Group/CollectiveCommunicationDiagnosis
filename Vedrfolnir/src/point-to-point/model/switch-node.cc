@@ -58,6 +58,14 @@ SwitchNode::SwitchNode(){
 	for (uint32_t i = 0; i < pCnt; i++)
 		m_u[i] = 0;
 	
+	// Initialize input traffic statistics
+	for (uint32_t i = 0; i < pCnt; i++) {
+		m_inputStats[i].totalBytes = 0;
+		m_inputStats[i].totalPackets = 0;
+		m_inputStats[i].lastUpdateTime = 0;
+		m_inputStats[i].flowData.clear();
+	}
+	
 	//RDMA NPA init
 	for (uint32_t i = 0; i < pCnt; i++)
 		for (uint32_t j = 0; j < epochNum; j++)
@@ -145,6 +153,9 @@ void SwitchNode::OutputTelemetry(uint32_t port, uint32_t inport, bool isSignal){
 	fprintf(fp_telemetry, "%d ", m_portTelemetryData[epoch][port].pfcPausedPacketNum);
 	fprintf(fp_telemetry, "%d\n\n", m_portTelemetryData[epoch][port].packetNum);
 
+	// Output input traffic statistics
+	OutputInputTrafficStats();
+
 	fprintf(fp_telemetry,"flow telemetry data for port %d\n", port);
 	fprintf(fp_telemetry, "flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum\n");
 	for(int i = 0; i < flowEntryNum; i++){
@@ -193,7 +204,79 @@ void SwitchNode::OutputTelemetry(uint32_t port, uint32_t inport, bool isSignal){
 	fflush(fp_telemetry);
 }
 
+void SwitchNode::CollectInputTraffic(uint32_t port, Ptr<Packet> p, CustomHeader &ch) {
+    m_inputStats[port].totalBytes += p->GetSize();
+    m_inputStats[port].totalPackets++;
+    m_inputStats[port].lastUpdateTime = Simulator::Now().GetTimeStep();
+
+    // Generate FiveTuple
+    FiveTuple fiveTuple{
+        .srcIp = ch.sip,
+        .dstIp = ch.dip,
+        .srcPort = (ch.l3Prot == 0x06 ? ch.tcp.sport : ch.udp.sport),
+        .dstPort = (ch.l3Prot == 0x06 ? ch.tcp.dport : ch.udp.dport),
+        .protocol = (uint8_t)ch.l3Prot
+    };
+    uint32_t flowId = FiveTupleHash(fiveTuple);
+    auto &entry = m_inputStats[port].flowData[flowId];
+    bool newEntry = Simulator::Now().GetTimeStep() - entry.lastTimeStep > epochTime * (epochNum - 1);
+    if (entry.flowTuple == fiveTuple && !newEntry) {
+        uint32_t seq = (ch.l3Prot == 0x06 ? ch.tcp.seq : ch.udp.seq);
+        if (entry.packetNum == 0) {
+            entry.minSeq = entry.maxSeq = seq;
+        } else {
+            if (seq < entry.minSeq) entry.minSeq = seq;
+            if (seq > entry.maxSeq) entry.maxSeq = seq;
+        }
+        entry.packetNum++;
+        entry.enqQdepth = 0;
+        entry.pfcPausedPacketNum = 0;
+        entry.lastTimeStep = Simulator::Now().GetTimeStep();
+    } else {
+        entry.flowTuple = fiveTuple;
+        uint32_t seq = (ch.l3Prot == 0x06 ? ch.tcp.seq : ch.udp.seq);
+        entry.minSeq = entry.maxSeq = seq;
+        entry.packetNum = 1;
+        entry.enqQdepth = 0;
+        entry.pfcPausedPacketNum = 0;
+        entry.lastTimeStep = Simulator::Now().GetTimeStep();
+    }
+}
+
+void SwitchNode::OutputInputTrafficStats() {
+    if (!fp_telemetry) return;
+    for (uint32_t port = 0; port < pCnt; port++) {
+        if (m_inputStats[port].flowData.empty()) continue;
+        fprintf(fp_telemetry, "flow telemetry data for port %d\n", port);
+        fprintf(fp_telemetry, "flowIdx srcIp dstIp srcPort dstPort protocol minSeq maxSeq packetNum enqQdepth pfcPausedPacketNum\n");
+        for (const auto& kv : m_inputStats[port].flowData) {
+            const auto& entry = kv.second;
+            if (entry.packetNum == 0) continue;
+            fprintf(fp_telemetry, "%u %08x %08x %u %u %u %u %u %u %u %u\n",
+                kv.first,
+                entry.flowTuple.srcIp,
+                entry.flowTuple.dstIp,
+                entry.flowTuple.srcPort,
+                entry.flowTuple.dstPort,
+                entry.flowTuple.protocol,
+                entry.minSeq,
+                entry.maxSeq,
+                entry.packetNum,
+                entry.enqQdepth,
+                entry.pfcPausedPacketNum);
+        }
+        fprintf(fp_telemetry, "\n");
+    }
+    fflush(fp_telemetry);
+}
+
 void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch){
+	// Collect input traffic statistics
+	FlowIdTag t;
+	p->PeekPacketTag(t);
+	uint32_t inDev = t.GetFlowId();
+	CollectInputTraffic(inDev, p, ch);
+
 	//RDMA NPA : signal packet parse
 	if (ch.l3Prot == 0xFB){
 		FlowIdTag t;
