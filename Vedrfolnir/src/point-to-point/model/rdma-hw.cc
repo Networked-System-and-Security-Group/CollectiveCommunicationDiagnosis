@@ -453,8 +453,13 @@ int RdmaHw::ReceiveNotif(Ptr<Packet> p, CustomHeader &ch){
 	uint32_t step = ch.notif.step;
 
 	auto app = DynamicCast<RdmaCC>(m_node->GetApplication(m_agent_app));
-	if(app->GetRecvStep() == step)  // waiting the other
+	// if(app->GetRecvStep() == step)  // waiting the other
+	// 	return 0;
+
+	if(app->GetRecvStep() < step){
+		m_detectSteps.insert(step);
 		return 0;
+	}
 
 	if(app->GetSendStep() > step){
 		return 0;
@@ -465,8 +470,9 @@ int RdmaHw::ReceiveNotif(Ptr<Packet> p, CustomHeader &ch){
 		return 0;
 	}
 
-	if(app->GetRecvStep() < step){
+	if(app->GetSendStep() < step){
 		m_detectSteps.insert(step);
+		m_agent_step = app->GetSendStep();
 		return 0;
 	}
 
