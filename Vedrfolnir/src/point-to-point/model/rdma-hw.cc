@@ -453,8 +453,6 @@ int RdmaHw::ReceiveNotif(Ptr<Packet> p, CustomHeader &ch){
 	uint32_t step = ch.notif.step;
 
 	auto app = DynamicCast<RdmaCC>(m_node->GetApplication(m_agent_app));
-	// if(app->GetRecvStep() == step)  // waiting the other
-	// 	return 0;
 
 	if(app->GetRecvStep() < step){
 		m_detectSteps.insert(step);
@@ -593,7 +591,9 @@ void RdmaHw::RedistributeQp(){
 
 // CC NPA
 void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev, Ptr<RdmaHw> rdmaHw){
-	if(rdmaHw->m_agent_step == 0 || seq <= qp->snd_una){
+
+	auto app = DynamicCast<RdmaCC>(rdmaHw->m_node->GetApplication(rdmaHw->m_agent_app));
+	if(rdmaHw->m_agent_step == 0 || app->GetSendStep() == app->GetRecvStep() || seq <= qp->snd_una){
 		return;
 	}
 
