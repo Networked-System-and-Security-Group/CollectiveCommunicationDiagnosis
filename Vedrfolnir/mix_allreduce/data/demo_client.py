@@ -122,7 +122,7 @@ def visualize_graph(G):
     plt.savefig("demo_client.png")
 
 if __name__ == "__main__":
-    filename = "../out/fct.txt"  # 按完成时间排序
+    filename = "../out/fct.txt"
     flow_data = parse_traffic_records(filename)
 
     flow_graph = build_graph(flow_data)

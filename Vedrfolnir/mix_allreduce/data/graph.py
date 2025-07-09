@@ -116,7 +116,7 @@ def parse_telemetry(switch_dict, switch_list):
                 trafficmeter[port] = int(lines[line_idx+2][:-1])
                 inport = line[:-1].split()[4]
             elif teleflag:
-                flow = line.split()[1]+"->"+line.split()[2]
+                flow = line.split()[1]+"->"+line.split()[2]+"\n"+line.split()[4]
                 pktnum = int(line.split()[8])
                 paused = int(line.split()[10])
                 flows.append(flow)
