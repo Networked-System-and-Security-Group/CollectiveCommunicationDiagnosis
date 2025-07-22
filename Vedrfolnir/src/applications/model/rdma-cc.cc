@@ -251,6 +251,27 @@ void RdmaCC::SendStep(){
     }
 }
 
+void RdmaCC::Allgather(){
+    // NS_LOG_FUNCTION_NOARGS ();
+
+    m_op = 7;
+
+    if(m_alg == 1){
+        // ring
+        uint32_t commLen = m_comm.size();
+        for(uint32_t i = 0; i < (commLen - 1); i++){
+            m_prevRank.push_back((m_rank - 1 + commLen) % commLen);
+            m_nextRank.push_back((m_rank + 1) % commLen);
+        }
+
+        return;
+    }
+
+    NS_ASSERT_MSG(0, "The algorithm is not supported");
+
+    //TODO
+}
+
 void RdmaCC::Allreduce(){
     // NS_LOG_FUNCTION_NOARGS ();
 
