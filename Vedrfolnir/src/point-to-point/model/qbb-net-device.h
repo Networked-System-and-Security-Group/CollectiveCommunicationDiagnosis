@@ -135,6 +135,13 @@ public:
 	TracedCallback<Ptr<const Packet>, uint32_t> m_traceDequeue;
 	TracedCallback<Ptr<const Packet>, uint32_t> m_traceDrop;
 	TracedCallback<uint32_t> m_tracePfc; // 0: resume, 1: pause
+
+  //pfc
+  bool m_qbbEnabled;	//< PFC behaviour enabled
+  bool m_qcnEnabled;
+  bool m_dynamicth;
+  uint32_t m_pausetime;	//< Time for each Pause
+  bool m_paused[qCnt];	//< Whether a queue paused
 protected:
 
 	//Ptr<Node> m_node;
@@ -160,13 +167,6 @@ protected:
   Ptr<BEgressQueue> m_queue;
 
   Ptr<QbbChannel> m_channel;
-  
-  //pfc
-  bool m_qbbEnabled;	//< PFC behaviour enabled
-  bool m_qcnEnabled;
-  bool m_dynamicth;
-  uint32_t m_pausetime;	//< Time for each Pause
-  bool m_paused[qCnt];	//< Whether a queue paused
 
   //qcn
 

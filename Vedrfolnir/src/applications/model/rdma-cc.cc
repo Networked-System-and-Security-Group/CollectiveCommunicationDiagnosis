@@ -477,37 +477,37 @@ void RdmaCC::SendNotification(){
     p->AddHeader(ppp);
 
     Ptr<RdmaHw> rdmaHw = GetNode()->GetObject<RdmaDriver>()->m_rdma;
-    Ptr<RdmaRxQueuePair> rxqp = rdmaHw->GetRxQp(m_ip.Get(), m_comm[m_prevRank[m_sendStep - 1]].ip.Get(), m_port, m_comm[m_prevRank[m_sendStep - 1]].port, m_pg, false);
+    // Ptr<RdmaRxQueuePair> rxqp = rdmaHw->GetRxQp(m_ip.Get(), m_comm[m_prevRank[m_sendStep - 1]].ip.Get(), m_port, m_comm[m_prevRank[m_sendStep - 1]].port, m_pg, false);
 
-    if(rxqp == NULL){  // waiting prev rank over steps
-        NS_LOG_WARN("Rank: " << m_rank << "  SendNotification: rxqp is NULL");
-        // TODO test
-        auto &v = rdmaHw->m_rtTable[m_comm[m_prevRank[m_sendStep - 1]].ip.Get()];
-        union{
-            struct {
-                    uint32_t sip, dip;
-                    uint16_t sport, dport;
-                };
-                char c[12];
-        } buf;
-        buf.sip = m_ip.Get();
-        buf.dip = m_comm[m_prevRank[m_sendStep - 1]].ip.Get();
-        buf.sport = m_port;
-        buf.dport = m_comm[m_prevRank[m_sendStep - 1]].port;
-        uint32_t nic_idx = v[Hash32(buf.c, 12) % v.size()];
+    // if(rxqp == NULL){  // waiting prev rank over steps
+    //     NS_LOG_WARN("Rank: " << m_rank << "  SendNotification: rxqp is NULL");
 
-        Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
+    auto &v = rdmaHw->m_rtTable[m_comm[m_prevRank[m_sendStep - 1]].ip.Get()];  ////
+    union{
+        struct {
+                uint32_t sip, dip;
+                uint16_t sport, dport;
+            };
+            char c[12];
+    } buf;
+    buf.sip = m_ip.Get();
+    buf.dip = m_comm[m_prevRank[m_sendStep - 1]].ip.Get();
+    buf.sport = m_port;
+    buf.dport = m_comm[m_prevRank[m_sendStep - 1]].port;
+    uint32_t nic_idx = v[Hash32(buf.c, 12) % v.size()];
 
-        dev->RdmaEnqueueHighPrioQ(p);
-        dev->TriggerTransmit();
-        return;
-    }
-
-    uint32_t nic_idx = rdmaHw->GetNicIdxOfRxQp(rxqp);
     Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
 
     dev->RdmaEnqueueHighPrioQ(p);
     dev->TriggerTransmit();
+    // return;
+    // }
+
+    // uint32_t nic_idx = rdmaHw->GetNicIdxOfRxQp(rxqp);
+    // Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
+
+    // dev->RdmaEnqueueHighPrioQ(p);
+    // dev->TriggerTransmit();
 }
 
 // CC NPA

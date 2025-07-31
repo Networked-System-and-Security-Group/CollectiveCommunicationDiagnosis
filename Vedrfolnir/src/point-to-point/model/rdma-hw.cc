@@ -593,7 +593,11 @@ void RdmaHw::RedistributeQp(){
 void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev, Ptr<RdmaHw> rdmaHw){
 
 	auto app = DynamicCast<RdmaCC>(rdmaHw->m_node->GetApplication(rdmaHw->m_agent_app));
-	if(rdmaHw->m_agent_step == 0 || app->GetSendStep() == app->GetRecvStep() || seq <= qp->snd_una){
+	// if(rdmaHw->m_agent_step == 0 || app->GetSendStep() == app->GetRecvStep() || seq <= qp->snd_una){
+	// 	return;
+	// }
+
+	if(rdmaHw->m_agent_step == 0 || seq <= qp->snd_una){
 		return;
 	}
 
@@ -601,6 +605,40 @@ void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev
 
 	uint64_t interval = Simulator::Now().GetTimeStep() - qp->npa.m_lastPollingTime;
 	if(interval > 3000000){
+		qp->npa.m_lastPollingTime = Simulator::Now().GetTimeStep();
+
+		Ptr<Packet> p = Create<Packet>(0);
+		CustomHeader pollingHdr(CustomHeader::L4_Header);
+		pollingHdr.l3Prot = 0xFA;
+		pollingHdr.polling.seq = seq;
+		pollingHdr.polling.eventID = Simulator::Now().GetTimeStep() - 1000000000;
+		pollingHdr.polling.sport = qp->sport;
+		pollingHdr.polling.dport = qp->dport;
+		p->AddHeader(pollingHdr);
+		Ipv4Header head;
+		head.SetDestination(Ipv4Address(qp->dip));
+		head.SetSource(Ipv4Address(qp->sip));
+		head.SetProtocol(0xFA);
+		head.SetTtl(64);
+		head.SetPayloadSize(p->GetSize());
+		p->AddHeader(head);
+		PppHeader ppp;
+		ppp.SetProtocol(0x0021);//IPv4
+		p->AddHeader(ppp);
+
+		dev->RdmaEnqueueHighPrioQ(p);
+		dev->TriggerTransmit();
+	}
+}
+
+void ScheduleLongAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev){
+
+	if(seq <= qp->snd_una){
+		return;
+	}
+
+	uint64_t interval = Simulator::Now().GetTimeStep() - qp->npa.m_lastPollingTime;
+	if(interval > 10000000){
 		qp->npa.m_lastPollingTime = Simulator::Now().GetTimeStep();
 
 		Ptr<Packet> p = Create<Packet>(0);
@@ -665,6 +703,7 @@ Ptr<Packet> RdmaHw::GetNxtPacket(Ptr<RdmaQueuePair> qp){
 	// RDMA NPA
 	if(m_agent_flag){
 		Simulator::Schedule(MicroSeconds(m_agent_threshold), &ScheduleAckClock, qp->snd_nxt, qp, m_nic[GetNicIdxOfQp(qp)].dev, this);
+		Simulator::Schedule(MilliSeconds(10), &ScheduleLongAckClock, qp->snd_nxt, qp, m_nic[GetNicIdxOfQp(qp)].dev);
 	}
 
 	// return
