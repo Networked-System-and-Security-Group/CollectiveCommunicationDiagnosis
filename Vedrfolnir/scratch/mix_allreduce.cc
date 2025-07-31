@@ -21,6 +21,7 @@
 #include <ns3/rdma-driver.h>
 #include <ns3/switch-node.h>
 #include <ns3/sim-setting.h>
+#include "ns3/pause-header.h"
 
 using namespace ns3;
 using namespace std;
@@ -34,6 +35,7 @@ double pause_time = 5, simulator_stop_time = 3.01;
 std::string data_rate, link_delay, topology_file, flow_file, trace_file, trace_output_file, dir;
 std::string fct_output_file = "fct.txt";
 std::string pfc_output_file = "pfc.txt";
+std::string topo_output_file = "topo.txt";
 
 double alpha_resume_interval = 55, rp_timer, ewma_gain = 1 / 16;
 double rate_decrease_interval = 4;
@@ -197,6 +199,7 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q)
 		fprintf(fout, "### %u %u %u %u %lu %lu %lu %lu\n", sid, did, q->sport, q->dport, q->m_size, q->startTime.GetTimeStep(), (Simulator::Now() - q->startTime).GetTimeStep(), standalone_fct);
 
 	fflush(fout);
+	int a = 0;   ////
 
 	// remove rxQp from the receiver
 	Ptr<Node> dstNode = n.Get(did);
@@ -207,6 +210,59 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q)
 void get_pfc(FILE *fout, Ptr<QbbNetDevice> dev, uint32_t type)
 {
 	fprintf(fout, "%lu %u %u %u %u\n", Simulator::Now().GetTimeStep(), dev->GetNode()->GetId(), dev->GetNode()->GetNodeType(), dev->GetIfIndex(), type);
+}
+
+void out_topo()
+{
+	FILE *topo_out = fopen(topo_output_file.c_str(), "w");
+	if (!topo_out)
+	{
+		NS_LOG_ERROR("Failed to open topo output file: " << topo_output_file);
+		return;
+	}
+
+	fprintf(topo_out, "NodeID NodeType IfIndex Up Delay Bw DnodeID\n");
+	for (uint32_t i = 0; i < n.GetN(); i++)
+	{
+		Ptr<Node> node = n.Get(i);
+
+		for (auto it = nbr2if[node].begin(); it != nbr2if[node].end(); it++)
+		{
+			fprintf(topo_out, "%u %u %u %d %lu %lu %u\n", node->GetId(), node->GetNodeType(), it->second.idx, it->second.up ? 1 : 0, it->second.delay, it->second.bw, it->first->GetId());
+		}
+	}
+	fclose(topo_out);
+}
+
+void PFC_in(Ptr<QbbNetDevice> dev, uint32_t qindex)
+{
+	dev->m_tracePfc(1);
+	dev->m_paused[qindex] = true;
+}
+void PFC_resume(Ptr<QbbNetDevice> dev, uint32_t qindex)
+{
+	dev->m_tracePfc(0);
+	dev->m_paused[qindex] = false;
+}
+void PFC_storm(Ptr<Node> node, uint32_t ifIndex, uint32_t qindex, double startTime, double stormTime)
+{
+	Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(node->GetDevice(ifIndex));
+
+	NS_LOG_INFO("PFC storm on node " << node->GetId() << " interface " << ifIndex << " for " << stormTime << " seconds");
+	
+	// Simulator::Schedule(Seconds(startTime), &PFC_in, dev, qindex);
+	Simulator::Schedule(Seconds(startTime), &QbbNetDevice::SendPfc, dev, qindex, 0);
+	double interval = 0.005;
+
+	double i;
+	for(i = interval; i < stormTime; i += interval)
+	{
+		// Simulator::Schedule(Seconds(startTime) + Seconds(i), &PFC_in, dev, qindex);
+		Simulator::Schedule(Seconds(startTime) + Seconds(i), &QbbNetDevice::SendPfc, dev, qindex, 0);
+	}
+
+	// Simulator::Schedule(Seconds(startTime + i), &PFC_resume, dev, qindex);
+	Simulator::Schedule(Seconds(startTime) + Seconds(i), &QbbNetDevice::SendPfc, dev, qindex, 1);
 }
 
 struct QlenDistribution
@@ -670,6 +726,11 @@ int main(int argc, char *argv[])
 				conf >> dctcp_rate_ai;
 				std::cout << "DCTCP_RATE_AI\t\t\t" << dctcp_rate_ai << "\n";
 			}
+			else if (key.compare("TOPO_OUTPUT_FILE") == 0)
+			{
+				conf >> topo_output_file;
+				std::cout << "TOPO_OUTPUT_FILE\t\t\t" << topo_output_file << '\n';
+			}
 			else if (key.compare("PFC_OUTPUT_FILE") == 0)
 			{
 				conf >> pfc_output_file;
@@ -981,6 +1042,8 @@ int main(int argc, char *argv[])
 		DynamicCast<QbbNetDevice>(d.Get(1))->TraceConnectWithoutContext("QbbPfc", MakeBoundCallback(&get_pfc, pfc_file, DynamicCast<QbbNetDevice>(d.Get(1))));
 	}
 
+	out_topo();
+
 	nic_rate = get_nic_rate(n);
 
 	// config switch
@@ -1016,7 +1079,7 @@ int main(int argc, char *argv[])
 			sw->m_mmu->ConfigBufferSize(buffer_size * 1024);
 			sw->m_mmu->node_id = sw->GetId();
 
-			// RDMA NPA detect  TODO
+			// RDMA NPA detect
 			std::string telemetry_path = "/telemetry_" + std::to_string(i) + ".txt";
 			telemetry_path = dir + telemetry_path;
 			sw->fp_telemetry = fopen(telemetry_path.c_str(), "w");
@@ -1218,11 +1281,14 @@ int main(int argc, char *argv[])
 			app_i->AddCommGroup(app_j->GetIP(), app_j->GetPort());
 		}
 
-		app_i->SetAlg(1);
-		app_i->Allreduce();  //TODO
+		app_i->SetAlg(1); // Set
+		app_i->Allgather();
 		app_i->SetIP2APPCb(MakeCallback(&ip_to_app));
     }
 	apps.Start(Seconds(2));
+
+	PFC_storm(n.Get(0), 4, 3, 2.07, 0.100);  // set a switch exgress queue paused
+	PFC_storm(n.Get(0), 3, 3, 2.005, 0.030);
 
 	topof.close();
 	tracef.close();

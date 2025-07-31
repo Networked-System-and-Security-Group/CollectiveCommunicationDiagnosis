@@ -10,6 +10,7 @@ TRACE_FILE mix_allreduce/trace.txt
 TRACE_OUTPUT_FILE mix_allreduce/out/mix.tr
 FCT_OUTPUT_FILE mix_allreduce/out/fct.txt
 PFC_OUTPUT_FILE mix_allreduce/out/pfc.txt
+TOPO_OUTPUT_FILE mix_allreduce/out/topo.txt
 
 SIMULATOR_STOP_TIME 10.005
 
