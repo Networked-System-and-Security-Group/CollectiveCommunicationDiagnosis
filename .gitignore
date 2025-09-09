@@ -28,3 +28,7 @@ analysis/trace_reader
 
 .ipynb_checkpoints/
 tmp/
+
+Vedrfolnir_copy
+backup/
+*copy
