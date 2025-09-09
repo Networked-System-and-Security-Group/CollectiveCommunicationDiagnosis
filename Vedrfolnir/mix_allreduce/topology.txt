@@ -16,14 +16,14 @@
 2 7 25Gbps 0.003ms 0
 3 6 25Gbps 0.003ms 0
 3 7 25Gbps 0.003ms 0
-4 8 25Gbps 0.005ms 0
-4 9 25Gbps 0.005ms 0
-5 10 25Gbps 0.005ms 0
-5 11 25Gbps 0.005ms 0
-6 8 25Gbps 0.005ms 0
-6 9 25Gbps 0.005ms 0
-7 10 25Gbps 0.005ms 0
-7 11 25Gbps 0.005ms 0
+4 8 25Gbps 0.003ms 0
+4 9 25Gbps 0.003ms 0
+5 10 25Gbps 0.003ms 0
+5 11 25Gbps 0.003ms 0
+6 8 25Gbps 0.003ms 0
+6 9 25Gbps 0.003ms 0
+7 10 25Gbps 0.003ms 0
+7 11 25Gbps 0.003ms 0
 
 First line: total node #, switch node #, link #
 Second line: switch node IDs...

@@ -85,12 +85,12 @@ def build_graph(records):
         else:
             wait[record.sid] = None
         prev_nodes[record.sid] = node
-
-    remove_zero_in_degree_nodes(G)
     
     return G
 
 def visualize_graph(G):
+
+    # remove_zero_in_degree_nodes(G)
 
     critical_path = nx.dag_longest_path(G)
     print("Critical Path:", critical_path)
@@ -121,11 +121,16 @@ def visualize_graph(G):
     
     plt.savefig("demo_client.png")
 
-if __name__ == "__main__":
-    filename = "../out/fct.txt"
+def demo():
+    filename = "../out/fct.txt"  
     flow_data = parse_traffic_records(filename)
 
     flow_graph = build_graph(flow_data)
     
     visualize_graph(flow_graph)
+
+    return flow_graph
+
+if __name__ == "__main__":
+    demo()
     

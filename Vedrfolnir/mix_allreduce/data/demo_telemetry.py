@@ -7,35 +7,92 @@ from collections import defaultdict
 WINDOW_SIZE = 10_000_000
 OUTPUT_DIR = "graph_telemetry"
 
+switch_map = {}
+
+f = open("../topology.txt", 'r')
+lines = f.readlines()
+f.close()
+
+node_num = int(lines[0].split()[0])
+link_num = int(lines[0].split()[2])
+
+for idx in range(2, link_num+2):
+    line = lines[idx].split()
+    src = line[0]
+    dst = line[1]
+    if src not in switch_map:
+        switch_map[src] = []
+    if dst not in switch_map:
+        switch_map[dst] = []
+    switch_map[src].append(dst)
+    switch_map[dst].append(src)
+
+for key in switch_map.keys():
+    switch_map[key] = {str(idx+1): switch_map[key][idx] for idx in range(len(switch_map[key]))}
+
 with open('telemetry.json') as f:
     data = json.load(f)
 
 window_graphs = defaultdict(lambda: nx.DiGraph())
 
+sw_window_start = {}
+
 for sw_id, sw_data in data.items():
     for ts_str, ts_info in sw_data.items():
         timestamp = int(ts_str)
         window_start = (timestamp // WINDOW_SIZE) * WINDOW_SIZE
+
+        if sw_window_start.get(sw_id) == window_start:
+            continue
+        sw_window_start[sw_id] = window_start
         
         G = window_graphs[window_start]
         G.graph.setdefault('sw_list', set()).add(sw_id)
 
         if ts_info["type"] == 'pfc_trace':
-            continue
+            if ts_info.get("inport") is None:
+                continue
+            last_switch = switch_map[sw_id][ts_info["inport"]]
+            last_port = ""
+            for port in switch_map[last_switch].keys():
+                if switch_map[last_switch][port] == sw_id:
+                    last_port = port
+                    break
+            # print(last_switch)
+            p_in_node = f"SW{last_switch}P{last_port}"
+            # G.add_node(p_in_node, node_type="P", color="royalblue", size=800, timestamp=timestamp)
+            G.add_node(p_in_node, node_type="P", color="royalblue", size=800)
         
         p_data = ts_info["epoch_now"]
         for p_id, p_info in p_data.items():
+
+            if p_id == "p2p_weight":
+
+                for p_p2p_id, p_p2p_weight in p_info.items():
+
+                    edge_attr = {
+                        'weight': p_p2p_weight,
+                        'label': f"P2P:{p_p2p_weight:.2f}",
+                        'color': 'blue'
+                    }
+                    p_node = f"SW{sw_id}P{p_p2p_id}"
+                    G.add_node(p_node, node_type="P", color="royalblue", size=800, timestamp=timestamp)
+                    G.add_edge(p_node, p_in_node, **edge_attr)
+
+                continue
+
             p_node = f"SW{sw_id}P{p_id}"
             
-            G.add_node(p_node, node_type="P", color="royalblue", size=800)
-            
+            G.add_node(p_node, node_type="P", color="royalblue", size=800, timestamp=timestamp)
+
             def process_edges(weight_dict, direction):
                 for f_link, weight in weight_dict.items():
                     if abs(weight) < 1e-6:  
                         continue
                     f_node = f"F_{f_link}"
                     
-                    G.add_node(f_node, node_type="F", color="limegreen", size=600)
+                    G.add_node(f_node, node_type="F", color="limegreen", size=600, timestamp=timestamp) 
+                    # G.add_node(f_node, node_type="F", color="limegreen", size=600) 
                     
                     edge_attr = {
                         'weight': weight,
@@ -47,8 +104,11 @@ for sw_id, sw_data in data.items():
                     else:
                         G.add_edge(f_node, p_node, **edge_attr)
             
-            process_edges(p_info["p2f_weight"], 'P2F')
-            process_edges(p_info["f2p_weight"], 'F2P')
+            if p_info.get("p2f_weight") is not None:
+                process_edges(p_info["p2f_weight"], 'P2F')
+            if p_info.get("f2p_weight") is not None:
+                process_edges(p_info["f2p_weight"], 'F2P')
+
 
 plt.style.use('ggplot')
 config = {
@@ -70,7 +130,8 @@ for window_start, G in window_graphs.items():
     plt.figure(figsize=(20, 12))
     
     node_types = nx.get_node_attributes(G, 'node_type')
-    pos = nx.spring_layout(G, k=0.8, iterations=50, seed=42)
+    # pos = nx.spring_layout(G, seed=32)
+    pos = nx.random_layout(G, seed=32)
     
     nx.draw_networkx_nodes(
         G, pos,
@@ -99,7 +160,7 @@ for window_start, G in window_graphs.items():
     )
     
     edge_labels = {(u, v): d['label'] for u, v, d in G.edges(data=True)}
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=config["edge_font_size"])
+    nx.draw_networkx_edge_labels(G, pos, label_pos=0.3, edge_labels=edge_labels, font_size=config["edge_font_size"])
     
     p_labels = {n: n for n in G.nodes if n.startswith('SW')}
     f_labels = {n: n.split('_')[1] for n in G.nodes if n.startswith('F_')}
