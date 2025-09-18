@@ -104,6 +104,7 @@ private:
   // CC NPA 
   void SendNotification();
   void SetAgent();
+  uint32_t m_agent_times; // times of detecting per step
   
 };
 

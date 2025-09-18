@@ -22,6 +22,7 @@ demo_client.png
 fct.txt
 pfc.txt
 qlen.txt
+result.txt
 
 analysis/trace_reader
 .lock-waf_linux2_build

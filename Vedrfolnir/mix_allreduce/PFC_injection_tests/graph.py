@@ -70,7 +70,7 @@ def sim_pkt_queue(flows, pktnums, queuedepths):
 def parse_telemetry(switch_dict, switch_list):
     for swicth_id in switch_list:
         # print('Parsing switch', swicth_id)
-        f = open("telemetry_"+str(swicth_id)+".txt", 'r')
+        f = open(f"{file_path}/telemetry_"+str(swicth_id)+".txt", 'r')
         lines = f.readlines()
         f.close()
 
@@ -165,6 +165,7 @@ def ip_to_node_id(ip: str) -> int:
 def rating():
     import demo_telemetry
     import networkx as nx
+    demo_telemetry.main(file_path)
     graphs = demo_telemetry.window_graphs
 
     def parse_network_graph(graph):
@@ -229,16 +230,60 @@ def rating():
     # ccf_rating = parse_network_graph(graphs[list(graphs.keys())[0]])
     # print('CCF Rating:', json.dumps(ccf_rating))
 
+    ################### PFC_STORM  test ####################
+    node1 = ""
+    node2 = ""
+
+    file_suffix = file_path.split('case')[-1]
+    case_id = int(file_suffix)
+    if case_id >= 0 and case_id <= 9:
+        node1 = "SW0P1"
+        node2 = "SW5P1"
+    elif case_id >= 10 and case_id <= 19:
+        node1 = "SW5P2"
+        node2 = "SW0P4"
+    elif case_id >= 20 and case_id <= 29:
+        node1 = "SW10P1"
+        node2 = "SW7P3"
+    elif case_id >= 30 and case_id <= 39:
+        node1 = "SW2P1"
+        node2 = "SW6P1"
+    else:
+        print("case id error!")
+        return {}
+    
+    TEST_result = "FF"
+    
+    for window, G in sorted(graphs.items()):
+        if G.get_edge_data(node1, node2) is not None:
+            TEST_result = "TP"
+            break
+        p_nodes = [n for n, attr in G.nodes(data=True) if attr.get('node_type') == 'P']
+        for n1 in p_nodes:
+            preds = list(G.predecessors(n1))
+            for n2 in p_nodes:
+                if n2 in preds:
+                    TEST_result = "FP"
+                    break
+            if TEST_result == "FP":
+                break
+    
+    file_n = file_path.split('/')[-1] + "_" + TEST_result
+    with open(f'mix_allreduce/PFC_injection_tests/data_result/{file_n}.txt', 'a+') as f:
+        pass
+     
+    ##################################
+
     ccf_ratings = []
 
-    f = open('result.txt', 'a+')
+    f = open(f'{file_path}/result.txt', 'a+')
     f.truncate(0)
 
     for window, G in sorted(graphs.items()):
         ccf_rating = parse_network_graph(G)
         ccf_ratings.append(ccf_rating)
 
-        with open('result.txt', 'a+') as f:
+        with open(f'{file_path}/result.txt', 'a+') as f:
             f.write(f'Graph window_{window}:\n{json.dumps(ccf_rating, indent=4)}\n\n')
 
     f.close()
@@ -247,7 +292,7 @@ def rating():
 
     if DEMO_CLIENT:
         import demo_client
-        flow_graph = demo_client.demo()
+        flow_graph = demo_client.demo(file_path=file_path)
         critical_path = nx.dag_longest_path(flow_graph)
 
         time_sum = []
@@ -302,8 +347,8 @@ def rating():
                     FS_rating[fl] += ra * weight[index-1]
         
         # print(f'Rating: {json.dumps(FS_rating, indent=4)}')
-        generate_rating_table(FS_rating)
-        with open('result.txt', 'a+') as f:
+        # generate_rating_table(FS_rating)
+        with open(f'{file_path}/result.txt', 'a+') as f:
             f.write(f'Rating:\n{json.dumps(FS_rating, indent=4)}\n\n')
 
     return FS_rating
@@ -329,6 +374,9 @@ def generate_rating_table(data):
         print(f"|{row[0]:^8}|{row[1]:^8}|{row[2]:^8}|{row[3]:^10.2f}|")
     print("+--------+--------+--------+----------+")
 
+import sys
+file_path = sys.argv[1]
+
 def main():
     switch_list = SWITCH_LIST
     switch_dict = {}
@@ -341,7 +389,7 @@ def main():
             if int(time_list[time_idx + 1]) - int(time_list[time_idx]) < 50000:
                 switch_dict[switch].pop(time_list[time_idx+1])
 
-    with open('telemetry.json', 'w') as f:
+    with open(f'{file_path}/telemetry.json', 'w') as f:
         json.dump(switch_dict, f)
     
     # print('waitfor data:', json.dumps(cc_f_waitfor, indent=4))

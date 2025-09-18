@@ -187,7 +187,7 @@ Ptr<RdmaCC> ip_to_app(Ipv4Address ip)
 void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q)
 {
 	uint32_t sid = ip_to_node_id(q->sip), did = ip_to_node_id(q->dip);
-	NS_LOG_INFO("qp_finish " << sid << " " << did << " " << q->sport << " " << q->dport);
+	// NS_LOG_INFO("qp_finish " << sid << " " << did << " " << q->sport << " " << q->dport);
 	uint64_t base_rtt = pairRtt[sid][did], b = pairBw[sid][did];
 	uint32_t total_bytes = q->m_size + ((q->m_size - 1) / packet_payload_size + 1) * (CustomHeader::GetStaticWholeHeaderSize() - IntHeader::GetStaticSize()); // translate to the minimum bytes required (with header but no INT)
 	uint64_t standalone_fct = base_rtt + total_bytes * 8000000000lu / b;
@@ -460,6 +460,8 @@ int main(int argc, char *argv[])
 		{
 			std::string key;
 			conf >> key;
+
+			// std::cout << conf.cur << "\n";
 
 			if (key.compare("ENABLE_QCN") == 0)
 			{
@@ -1302,7 +1304,7 @@ int main(int argc, char *argv[])
 	//
 	// Now, do the actual simulation.
 	//
-	NS_LOG_INFO("Running Simulation.\n");
+	std::cout << "Running Simulation.\n";
 	fflush(stdout);
 	NS_LOG_INFO("Run Simulation.");
 	Simulator::Stop(Seconds(simulator_stop_time));
@@ -1312,5 +1314,5 @@ int main(int argc, char *argv[])
 	fclose(trace_output);
 
 	endt = clock();
-	NS_LOG_INFO((double)(endt - begint) / CLOCKS_PER_SEC << "\n");
+	std::cout << (double)(endt - begint) / CLOCKS_PER_SEC << "\n";
 }

@@ -593,15 +593,24 @@ void RdmaHw::RedistributeQp(){
 void ScheduleAckClock(uint64_t seq, Ptr<RdmaQueuePair> qp, Ptr<QbbNetDevice> dev, Ptr<RdmaHw> rdmaHw){
 
 	auto app = DynamicCast<RdmaCC>(rdmaHw->m_node->GetApplication(rdmaHw->m_agent_app));
+	// Vedrfolnir-v1
 	// if(rdmaHw->m_agent_step == 0 || app->GetSendStep() == app->GetRecvStep() || seq <= qp->snd_una){
 	// 	return;
 	// }
+	// rdmaHw->m_agent_step = 0;
 
+	// Vedrfolnir-v1.1
 	if(rdmaHw->m_agent_step == 0 || seq <= qp->snd_una){
 		return;
 	}
-
 	rdmaHw->m_agent_step = 0;
+
+	// Vedrfolnir-v2
+
+	// Hawkeye-modified
+	// if(seq <= qp->snd_una){
+	// 	return;
+	// }
 
 	uint64_t interval = Simulator::Now().GetTimeStep() - qp->npa.m_lastPollingTime;
 	if(interval > 3000000){

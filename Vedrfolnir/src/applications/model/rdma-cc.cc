@@ -86,6 +86,11 @@ RdmaCC::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&RdmaCC::m_baseRtt),
                    MakeUintegerChecker<uint64_t> ())
+    .AddAttribute ("TimesDetect",
+                   "Times of detecting per step",
+                   UintegerValue (1),
+                   MakeUintegerAccessor (&RdmaCC::m_agent_times),
+                   MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
 }
@@ -477,10 +482,6 @@ void RdmaCC::SendNotification(){
     p->AddHeader(ppp);
 
     Ptr<RdmaHw> rdmaHw = GetNode()->GetObject<RdmaDriver>()->m_rdma;
-    // Ptr<RdmaRxQueuePair> rxqp = rdmaHw->GetRxQp(m_ip.Get(), m_comm[m_prevRank[m_sendStep - 1]].ip.Get(), m_port, m_comm[m_prevRank[m_sendStep - 1]].port, m_pg, false);
-
-    // if(rxqp == NULL){  // waiting prev rank over steps
-    //     NS_LOG_WARN("Rank: " << m_rank << "  SendNotification: rxqp is NULL");
 
     auto &v = rdmaHw->m_rtTable[m_comm[m_prevRank[m_sendStep - 1]].ip.Get()];  ////
     union{
@@ -500,14 +501,6 @@ void RdmaCC::SendNotification(){
 
     dev->RdmaEnqueueHighPrioQ(p);
     dev->TriggerTransmit();
-    // return;
-    // }
-
-    // uint32_t nic_idx = rdmaHw->GetNicIdxOfRxQp(rxqp);
-    // Ptr<QbbNetDevice> dev = rdmaHw->m_nic[nic_idx].dev;
-
-    // dev->RdmaEnqueueHighPrioQ(p);
-    // dev->TriggerTransmit();
 }
 
 // CC NPA

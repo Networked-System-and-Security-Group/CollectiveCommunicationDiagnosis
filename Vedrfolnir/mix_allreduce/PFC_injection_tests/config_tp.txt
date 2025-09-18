@@ -3,14 +3,11 @@ USE_DYNAMIC_PFC_THRESHOLD 0
 
 PACKET_PAYLOAD_SIZE 1300
 
-DIR mix_allreduce/data
-TOPOLOGY_FILE mix_allreduce/topology.txt
-FLOW_FILE mix_allreduce/flow.txt
-TRACE_FILE mix_allreduce/trace.txt
-TRACE_OUTPUT_FILE mix_allreduce/out/mix.tr
-FCT_OUTPUT_FILE mix_allreduce/out/fct.txt
-PFC_OUTPUT_FILE mix_allreduce/out/pfc.txt
-TOPO_OUTPUT_FILE mix_allreduce/out/topo.txt
+TOPOLOGY_FILE mix_allreduce/PFC_injection_tests/topology.txt
+FLOW_FILE mix_allreduce/PFC_injection_tests/flow.txt
+TRACE_FILE mix_allreduce/PFC_injection_tests/trace.txt
+TRACE_OUTPUT_FILE mix_allreduce/PFC_injection_tests/tmp/mix.tr
+TOPO_OUTPUT_FILE mix_allreduce/PFC_injection_tests/tmp/topo.txt
 
 SIMULATOR_STOP_TIME 10.005
 
@@ -49,18 +46,14 @@ ACK_HIGH_PRIO 1
 
 LINK_DOWN 0 0 0
 
-ENABLE_TRACE 1
+ENABLE_TRACE 0
 
 KMAX_MAP 3 25000000000 400 50000000000 800 100000000000 1600
 KMIN_MAP 3 25000000000 100 50000000000 200 100000000000 400
 PMAX_MAP 3 25000000000 0.2 50000000000 0.2 100000000000 0.2
 BUFFER_SIZE 1000
-QLEN_MON_FILE mix_allreduce/out/qlen.txt
+QLEN_MON_FILE mix_allreduce/PFC_injection_tests/tmp/qlen.txt
 QLEN_MON_START 2000000000
 QLEN_MON_END 2050000000
 
 AGENT_NODE 8 12 13 14 15 16 17 18 19
-AGENT_THRESHOLD 30
-#NO_CC_NODE 12 13 14 15 16 17 18 19
-
-PFC_STORM 2 3 2.07 0.010
